@@ -5,26 +5,28 @@ from colorama import Fore
 from colorama import Style
 from scrapy.crawler import CrawlerProcess
 from multiprocessing import Process
+
 i = 0
 
 class MySpider(scrapy.Spider):
-  
     name = "CPU"
-    start_urls = ["https://www.pccasegear.com/products/52254/amd-ryzen-5-5600x-with-wraith-stealth","https://www.ple.com.au/Products/643561/AMD-Ryzen-5-5600X-37Ghz-6-Core-12-Thread-AM4---With-Wraith-Stealth-Cooler"]
+    start_urls = ["https://www.pccasegear.com/products/52254/amd-ryzen-5-5600x-with-wraith-stealth","https://www.ple.com.au/Products/643561/AMD-Ryzen-5-5600X-37Ghz-6-Core-12-Thread-AM4---With-Wraith-Stealth-Cooler","https://www.centrecom.com.au/amd-ryzen-5-5600x-460ghz-6-cores-12-threads-am4-desktop-processor",]
     
-
+    custom_settings = {
+        'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter',
+    }
     
+   
     def parse(self, response):
         checktxt = ["In stock", "In Stock", "in stock"]
-
+        pccg = response.xpath("//div[@class='price-box']//text()").getall()
+        ple = response.xpath("//div[@class='viewItemAvailabilityStatusWrapper']//text()").getall()
+        ccom = response.xpath("//div[@class='prod_right']//text()").getall()  
         global i
-
+        global start_urls
         i = i + 1
        
         j = 0
-
-        pccg = response.xpath("//div[@class='price-box']//text()").getall()
-        ple = response.xpath("//div[@class='viewItemAvailabilityStatusWrapper']//text()").getall()  
 
         if i == 1:
             
@@ -37,80 +39,47 @@ class MySpider(scrapy.Spider):
                     webbrowser.open('https://www.pccasegear.com/products/52254/amd-ryzen-5-5600x-with-wraith-stealth')
 
                     break
+
                 elif j == len(pccg):
                     print(f"{Fore.BLUE}5600X @ PCCG::{Fore.RED}Out of Stock{Style.RESET_ALL}")
-
-
+                    start_urls = []
+                    
+                    
         elif i == 2:
             
             for stock in ple:
                 j = j + 1
+                
                 if checktxt[0] in stock:
+                    
                     print(f"{Fore.BLUE}5600X @ PLE::{Fore.GREEN}In Stock{Style.RESET_ALL}")
 
                     webbrowser.open('https://www.ple.com.au/Products/643561/AMD-Ryzen-5-5600X-37Ghz-6-Core-12-Thread-AM4---With-Wraith-Stealth-Cooler')
 
                     break
 
-                if j == len(ple):
-                     print(f"{Fore.BLUE}5600X @ PLE::{Fore.RED}Out of Stock{Style.RESET_ALL}")
-        
-        elif i > 2:
-            i = 0
+                elif j == len(ple):
+                    print(f"{Fore.BLUE}5600X @ PLE::{Fore.RED}Out of Stock{Style.RESET_ALL}")
+                    start_urls = []
 
-class MySpider2(scrapy.Spider):
-  
-    name = "CPU"
-    start_urls = ["https://www.pccasegear.com/products/52254/amd-ryzen-5-5600x-with-wraith-stealth","https://www.ple.com.au/Products/643561/AMD-Ryzen-5-5600X-37Ghz-6-Core-12-Thread-AM4---With-Wraith-Stealth-Cooler"]
-    
 
-    
-    def parse(self, response):
-        checktxt = ["In stock", "In Stock", "in stock"]
-
-        global i
-
-        i = i + 1
-       
-        j = 0
-
-        pccg = response.xpath("//div[@class='price-box']//text()").getall()
-        ple = response.xpath("//div[@class='viewItemAvailabilityStatusWrapper']//text()").getall()  
-
-        if i == 1:
-            
-            for stock in pccg:
+        elif i == 3:
+             
+            for stock in ccom:
                 j = j + 1
                 
                 if checktxt[0] in stock:
-                    print(f"{Fore.BLUE}5600X @ PCCG::{Fore.GREEN}In Stock{Style.RESET_ALL}")
-                
-                    webbrowser.open('https://www.pccasegear.com/products/52254/amd-ryzen-5-5600x-with-wraith-stealth')
+                    print(f"{Fore.BLUE}5600X @ Centrecom::{Fore.GREEN}In Stock{Style.RESET_ALL}")
 
-                    break
-                elif j == len(pccg):
-                    print(f"{Fore.BLUE}5600X @ PCCG::{Fore.RED}Out of Stock{Style.RESET_ALL}")
-
-
-        elif i == 2:
-            
-            for stock in ple:
-                j = j + 1
-                if checktxt[0] in stock:
-                    print(f"{Fore.BLUE}5600X @ PLE::{Fore.GREEN}In Stock{Style.RESET_ALL}")
-
-                    webbrowser.open('https://www.ple.com.au/Products/643561/AMD-Ryzen-5-5600X-37Ghz-6-Core-12-Thread-AM4---With-Wraith-Stealth-Cooler')
+                    webbrowser.open('https://www.centrecom.com.au/amd-ryzen-5-5600x-460ghz-6-cores-12-threads-am4-desktop-processor')
 
                     break
 
-                if j == len(ple):
-                     print(f"{Fore.BLUE}5600X @ PLE::{Fore.RED}Out of Stock{Style.RESET_ALL}")
+                elif j == len(ccom):
+                    print(f"{Fore.BLUE}5600X @ Centrecom::{Fore.RED}Out of Stock{Style.RESET_ALL}")
+
+                    
         
-        elif i > 2:
-            i = 0
-
-
-
 
 
        
@@ -119,11 +88,8 @@ def CheckStock():
     process = CrawlerProcess()
     process.crawl(MySpider)   
     process.start()
-    sleep(900)
-if __name__ == '__main__':
-    for k in range(1000):
-        p = Process(target=CheckStock)
-        p.start()
-        p.join()
+    #sleep(900)
+
+CheckStock()    
 
 
