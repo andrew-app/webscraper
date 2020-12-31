@@ -1,18 +1,26 @@
 import scrapy
 import webbrowser
 from time import sleep
-from colorama import Fore
-from colorama import Style
+from colorama import Fore, Style
 from scrapy.crawler import CrawlerProcess
 from multiprocessing import Process
 
 i = 0
+urls = ["https://www.pccasegear.com/products/52254/amd-ryzen-5-5600x-with-wraith-stealth","https://www.ple.com.au/Products/643561/AMD-Ryzen-5-5600X-37Ghz-6-Core-12-Thread-AM4---With-Wraith-Stealth-Cooler","https://www.centrecom.com.au/amd-ryzen-5-5600x-460ghz-6-cores-12-threads-am4-desktop-processor"]
+
+
+
 
 class MySpider(scrapy.Spider):
     name = "CPU"
     start_urls=["https://www.pccasegear.com/products/52254/amd-ryzen-5-5600x-with-wraith-stealth"]
     
+    custom_settings = {
+        'LOG_ENABLED': 'False',
+    }
+
     def parse(self, response):
+        
         checktxt = ["In stock", "In Stock", "in stock", "Call"]
         stores = ["Online","Bundoora"]
         global i
@@ -59,7 +67,7 @@ class MySpider(scrapy.Spider):
 
         elif i == 2:
             ccom = response.xpath("//div[@class='prod_right']//text()").getall()
-            a = False #boolean for cases when one with status call
+            a = False #boolean for cases when one with status 'call'
             b = False
             for stock in ccom:
                 j = j + 1
@@ -104,8 +112,16 @@ def CheckStock():
     process = CrawlerProcess()
     process.crawl(MySpider)   
     process.start()
-    #sleep(900)
+    sleep(3)
 
-CheckStock()    
+
+
+
+if __name__ == '__main__':
+    while True:
+        p = Process(target=CheckStock)
+        p.start()
+        p.join()
+  
 
 
