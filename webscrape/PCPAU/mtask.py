@@ -1,35 +1,28 @@
 import scrapy
-import webbrowser
 import time
 from colorama import Fore, Style
 from scrapy.crawler import CrawlerProcess
 from multiprocessing import Process
 from em_service import sendemail
-
-i = 0
-
+import settings
+import pymongo
 urls = ["https://www.pccasegear.com/products/52254/amd-ryzen-5-5600x-with-wraith-stealth",
         "https://www.ple.com.au/Products/643561/AMD-Ryzen-5-5600X-37Ghz-6-Core-12-Thread-AM4---With-Wraith-Stealth-Cooler",
         "https://www.centrecom.com.au/amd-ryzen-5-5600x-460ghz-6-cores-12-threads-am4-desktop-processor"]
-
+i = 0
 
 class MySpider(scrapy.Spider):
     name = "CPU"
     start_urls = ["https://www.pccasegear.com/products/46835/amd-ryzen-5-3600-with-wraith-stealth"]
-
     custom_settings = {
         'LOG_ENABLED': 'False',
     }
-    emf = False
-    s1 = False  # flags for in stock at stores
-    s2 = False
-    s3 = False
 
     def parse(self, response):
 
+        global i, start_time, start_time, check_time
         checktxt = ["In stock", "In Stock", "in stock", "Call"]
         stores = ["Online", "Bundoora"]
-        global i, s1, s2, s3, body
 
         j = 0
 
@@ -41,15 +34,13 @@ class MySpider(scrapy.Spider):
 
                 if checktxt[0] in stock:
                     print(f"{Fore.BLUE}@PCCG::{Fore.GREEN}In Stock{Style.RESET_ALL}")
-                    s1 = True
+                    settings.inv["PCCG"] = "In Stock"
+                elif j == len(pccg):  # 2nd last element in list will be ignored due to array indexing from 1 instead of 0
 
-
-                elif j == len(
-                        pccg):  # 2nd last element in list will be ignored due to array indexing from 1 instead of 0
-                    if s1 == False:
-                        print(f"{Fore.BLUE}@PCCG::{Fore.RED}Out of Stock{Style.RESET_ALL}")
+                    print(f"{Fore.BLUE}@PCCG::{Fore.RED}Out of Stock{Style.RESET_ALL}")
                     i = i + 1
                     yield scrapy.Request(urls[1], callback=self.parse)
+
 
         elif i == 1:
 
@@ -61,14 +52,14 @@ class MySpider(scrapy.Spider):
                 if checktxt[0] in stock:
 
                     print(f"{Fore.BLUE}@PLE::{Fore.GREEN}In Stock{Style.RESET_ALL}")
-                    s2 = True
+                    settings.inv["PLE"] = "In Stock"
 
 
 
 
                 elif j == len(ple):
-                    if s2 == False:
-                        print(f"{Fore.BLUE}@PLE::{Fore.RED}Out of Stock{Style.RESET_ALL}")
+
+                    print(f"{Fore.BLUE}@PLE::{Fore.RED}Out of Stock{Style.RESET_ALL}")
                     i = i + 1
                     yield scrapy.Request(urls[2], callback=self.parse)
 
@@ -83,7 +74,7 @@ class MySpider(scrapy.Spider):
                     if checktxt[0] in ccom[j]:
                         print(
                             f"{Fore.BLUE}@Centrecom{Fore.WHITE}(online){Fore.BLUE}::{Fore.GREEN}In Stock{Style.RESET_ALL}")
-                        s3 = True
+                        settings.inv["CCOM"] = "In Stock"
 
 
                     elif checktxt[3] in ccom[j]:
@@ -94,9 +85,8 @@ class MySpider(scrapy.Spider):
 
                 elif stores[1] in stock:
                     if checktxt[0] in ccom[j]:
-                        print(
-                            f"{Fore.BLUE}@Centrecom{Fore.WHITE}(Bundoora){Fore.BLUE}::{Fore.GREEN}In Stock{Style.RESET_ALL}")
-                        s3 = True
+                        print(f"{Fore.BLUE}@Centrecom{Fore.WHITE}(Bundoora){Fore.BLUE}::{Fore.GREEN}In Stock{Style.RESET_ALL}")
+                        settings.inv["CCOM"] = "In Stock"
 
 
                     elif checktxt[3] in ccom[j]:
@@ -107,12 +97,11 @@ class MySpider(scrapy.Spider):
                         b = True
 
                 elif j == len(ccom):
-                    break
 
+                    break
             if a == False and b == False:  # Both Out of Stock
                 print(f"{Fore.BLUE}@Centrecom{Fore.WHITE}(online){Fore.BLUE}::{Fore.RED}Out of Stock{Style.RESET_ALL}")
-                print(
-                    f"{Fore.BLUE}@Centrecom{Fore.WHITE}(Bundoora){Fore.BLUE}::{Fore.RED}Out of Stock{Style.RESET_ALL}")
+                print(f"{Fore.BLUE}@Centrecom{Fore.WHITE}(Bundoora){Fore.BLUE}::{Fore.RED}Out of Stock{Style.RESET_ALL}")
 
             elif a == True and b == False:  # Online in stock
                 print(
@@ -121,29 +110,8 @@ class MySpider(scrapy.Spider):
             elif a == False and b == True:  # Bundoora in stock
                 print(f"{Fore.BLUE}@Centrecom{Fore.WHITE}(online){Fore.BLUE}::{Fore.RED}Out of Stock{Style.RESET_ALL}")
 
-        elif i == 3:
-            if t > check_time or emf == False:  # email sent every 15 minutes when in stock
 
-                if s1 == True and s2 == True and s3 == True:
-                    body = ["In stock @ PCCG,PLE & Centrecom: ", urls]
 
-                elif s1 == True and s2 == False and s3 == False:
-                    body = ["In stock @ PCCG: ", urls[0]]
-
-                elif s1 == False and s2 == True and s3 == False:
-                    body = ["In stock @ PLE: ", urls[1]]
-
-                elif s1 == False and s2 == False and s3 == True:
-                    body = ["In stock @ Centrecom: ", urls[2]]
-
-                elif s1 == True and s2 == True and s3 == False:
-                    body = ["In stock @ PCCG & PLE: ", urls[0][1]]
-
-                elif s1 == True and s2 == False and s3 == True:
-                    body = ["In stock @ PCCG & Centrecom: ", urls[0][2]]
-
-                elif s1 == False and s2 == True and s3 == True:
-                    body = ["In stock @ PLE & Centrecom: ", urls[1][2]]
 
 
 def CheckStock():
@@ -156,26 +124,30 @@ def CheckStock():
 if __name__ == '__main__':
     start_time = time.time()
     check_time = time.strftime("%H:%M:%S", time.gmtime(30))
-
-    body = []
+    settings.init()
+    print(settings.inv)
+    print(settings.body)
 
     while True:
-
         p = Process(target=CheckStock)
         p.start()
         p.join()
         current_time = time.time()
         elapsed_time = current_time - start_time
-
         t = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
         print(t)
+        if t > check_time:  # email sent every 15 minutes when in stock
 
-        if body:
-            print("email sent")
-            sendemail("Product Status", body)
             start_time = time.time()
-            emf = True
-            body = []
+
+            if settings.body:
+                print("email sent")
+                sendemail("Product Status", settings.body)
+                settings.body = []
+
+
+
+
 
 
 
