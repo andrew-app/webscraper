@@ -20,12 +20,13 @@ inv = {
     "PLE": "Out of Stock",
     "CCOM": "Out of Stock"
 }
+
 body = []
 
 
 class MySpider(scrapy.Spider):
     name = "PCPAU"
-    start_urls = ["https://www.pccasegear.com/products/52254/amd-ryzen-5-5600x-with-wraith-stealth"]
+    start_urls = ["https://www.pccasegear.com/products/46835/amd-ryzen-5-3600-with-wraith-stealth"]
     custom_settings = {
         'LOG_ENABLED': 'False',
     }
@@ -134,17 +135,19 @@ def CheckStock():
     process = CrawlerProcess()
     process.crawl(MySpider)
     process.start()
-    time.sleep(60)
+    time.sleep(15)
     body.append([inv, urls])
     with open(status, 'wb') as fi:
         pickle.dump(inv, fi)
+    with open(emailb, 'wb') as fi:
+        pickle.dump(body, fi)
 
 
 if __name__ == '__main__':
-    check_time = time.strftime("%H:%M:%S", time.gmtime(1800))
+    check_time = time.strftime("%H:%M:%S", time.gmtime(30))
     start_time = time.time()
     status = "data.pk"
-
+    emailb = "emb.pk"
 
     while True:
         p = Process(target=CheckStock)
@@ -159,13 +162,15 @@ if __name__ == '__main__':
         if t > check_time:  # email sent every 15 minutes when in stock
             h, m, s = check_time.split(":")
             check_time_u = int(datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s)).total_seconds())
-            check_time = check_time_u + 1800
+            check_time = check_time_u + 30
             check_time = time.strftime("%H:%M:%S", time.gmtime(check_time))
             with open(status, 'rb') as fi:
                 inv = pickle.load(fi)
-            print(inv)
+            with open(emailb, 'rb') as fi:
+                body = pickle.load(fi)
             if checktxt[1] in inv.values():
                 print("email sent")
+                print(body)
                 sendemail("Product Status", body)
 
 
