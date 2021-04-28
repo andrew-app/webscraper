@@ -160,7 +160,7 @@ def CheckStock():
     process = CrawlerProcess()
     process.crawl(MySpider)
     process.start()
-    time.sleep(60)
+    time.sleep(60) #check stock every 60 sec
     body.append([inv, urls])
     with open(status, 'wb') as fi:
         pickle.dump(inv, fi)
@@ -184,7 +184,7 @@ if __name__ == '__main__':
         t = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
 
         print("Uptime: ", t)
-        if t > check_time:  # email sent every 15 minutes when in stock
+        if t > check_time:  # email sent every 30 minutes when in stock
             h, m, s = check_time.split(":")
             check_time_u = int(datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s)).total_seconds())
             check_time = check_time_u + 1800
@@ -195,6 +195,6 @@ if __name__ == '__main__':
                 body = pickle.load(fi)
             if checktxt[1] in inv.values():
                 print("email sent")
-                #sendemail("Product Status", body)
+                sendemail("Product Status", body)
 
 
